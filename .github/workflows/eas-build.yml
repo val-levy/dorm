@@ -1,0 +1,42 @@
+name: EAS Build (iOS/Android)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Type check
+        run: npm run type-check --if-present
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build iOS (internal distribution)
+        run: eas build --platform ios --build-profile preview --non-interactive
+
+      - name: Build Android (internal distribution)
+        run: eas build --platform android --build-profile preview --non-interactive

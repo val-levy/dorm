@@ -1,0 +1,34 @@
+{
+  "cli": {
+    "version": ">= 5.0.0",
+    "promptToConfigurePushNotifications": false
+  },
+  "build": {
+    "development": {
+      "development": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      },
+      "distribution": "internal"
+    },
+    "production": {
+      "android": {
+        "buildType": "aab"
+      },
+      "distribution": "store"
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "YOUR_APP_ID"
+      },
+      "android": {
+        "googleServiceAccountKeyPath": "./google-play-key.json"
+      }
+    }
+  }
+}

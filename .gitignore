@@ -1,0 +1,84 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+.pnpm-store/
+
+# Package manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Expo / React Native
+.expo/
+.expo-shared/
+web-build/
+dist/
+.metro-cache/
+.eslintcache
+
+# Expo Application Services
+.eas/build/
+.eas/cache/
+
+# Native build outputs
+android/.gradle/
+android/app/build/
+android/build/
+ios/build/
+ios/Pods/
+ios/DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcuserstate
+
+# App signing and provisioning
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Supabase local state and secrets
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+supabase/functions/.env
+
+# Testing and coverage
+coverage/
+.nyc_output/
+test-results/
+junit.xml
+detox/artifacts/
+
+# Build caches
+build/
+.turbo/
+*.tsbuildinfo
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code - personal/local
+.claude/settings.local.json
+.claude/.cache/
+.claude/logs/
+CLAUDE.md.local

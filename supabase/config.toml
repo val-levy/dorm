@@ -1,0 +1,29 @@
+# Supabase local development configuration
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_database_url = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+smtp_port = 54324
+pop3_port = 54325
+api_port = 54326
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["dorm://auth"]
+jwt_secret = "your-jwt-secret"
+jwt_expiry = 3600
+enable_signup = true
