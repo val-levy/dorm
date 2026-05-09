@@ -35,7 +35,7 @@ export default function ChatScreen() {
       const { data: userData } = await supabase
         .from('users')
         .select('chapter_id, chapters(*)')
-        .eq('id', user.id)
+        .eq('auth_id', user.id)
         .single();
 
       if (userData?.chapters) {

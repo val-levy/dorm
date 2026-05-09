@@ -15,6 +15,12 @@ export default function LoginScreen() {
       return;
     }
 
+    const domain = email.trim().split('@')[1]?.toLowerCase();
+    if (domain !== 'uoregon.edu') {
+      Alert.alert('Access Restricted', 'DormDAO alpha is limited to @uoregon.edu accounts.');
+      return;
+    }
+
     setLoading(true);
     try {
       await signUp(email);

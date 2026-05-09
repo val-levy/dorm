@@ -29,7 +29,7 @@ export default function SettingsScreen() {
       const { data } = await supabase
         .from('users')
         .select('*, chapters(name)')
-        .eq('id', user.id)
+        .eq('auth_id', user.id)
         .single();
 
       setUserData(data);

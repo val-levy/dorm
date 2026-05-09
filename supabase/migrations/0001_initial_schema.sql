@@ -2,6 +2,12 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- Create sequences used by bigint primary keys
+CREATE SEQUENCE IF NOT EXISTS users_id_seq START WITH 1;
+CREATE SEQUENCE IF NOT EXISTS chapters_id_seq START WITH 1;
+CREATE SEQUENCE IF NOT EXISTS chapter_domains_id_seq START WITH 1;
+CREATE SEQUENCE IF NOT EXISTS user_roles_id_seq START WITH 1;
+
 -- USERS table
 CREATE TABLE IF NOT EXISTS users (
   id bigint PRIMARY KEY DEFAULT nextval('users_id_seq'::regclass),
@@ -88,11 +94,10 @@ CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON user_roles(user_id) WHERE d
 CREATE INDEX IF NOT EXISTS idx_user_roles_chapter_id ON user_roles(chapter_id) WHERE deleted_at IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_roles_unique ON user_roles(user_id, chapter_id, role) WHERE deleted_at IS NULL;
 
--- Create sequences
-CREATE SEQUENCE IF NOT EXISTS users_id_seq START WITH 1;
-CREATE SEQUENCE IF NOT EXISTS chapters_id_seq START WITH 1;
-CREATE SEQUENCE IF NOT EXISTS chapter_domains_id_seq START WITH 1;
-CREATE SEQUENCE IF NOT EXISTS user_roles_id_seq START WITH 1;
+ALTER SEQUENCE users_id_seq OWNED BY users.id;
+ALTER SEQUENCE chapters_id_seq OWNED BY chapters.id;
+ALTER SEQUENCE chapter_domains_id_seq OWNED BY chapter_domains.id;
+ALTER SEQUENCE user_roles_id_seq OWNED BY user_roles.id;
 
 -- Enable RLS on tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

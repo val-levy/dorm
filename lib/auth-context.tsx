@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from './supabase';
 import type { User, Session } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
 
 interface AuthContextType {
   user: User | null;
@@ -27,6 +28,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const getAuthRedirectUrl = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      return `${window.location.origin}/complete-profile`;
+    }
+
+    return `${process.env.EXPO_PUBLIC_DEEP_LINK_SCHEME}://auth`;
+  };
 
   // Restore session on app load
   useEffect(() => {
@@ -70,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error: err } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${process.env.EXPO_PUBLIC_DEEP_LINK_SCHEME}://auth`,
+          emailRedirectTo: getAuthRedirectUrl(),
         },
       });
 
@@ -88,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error: err } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${process.env.EXPO_PUBLIC_DEEP_LINK_SCHEME}://auth`,
+          redirectTo: getAuthRedirectUrl(),
         },
       });
 

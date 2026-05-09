@@ -4,7 +4,6 @@
     "slug": "dormdao",
     "version": "0.0.1",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "scheme": "dorm",
     "plugins": [
@@ -14,16 +13,9 @@
           "initialOrientation": "PORTRAIT"
         }
       ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png"
-        }
-      ]
+      "expo-notifications"
     ],
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [
@@ -44,8 +36,7 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/favicon.png"
+      "output": "static"
     },
     "extra": {
       "eas": {

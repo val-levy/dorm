@@ -1,12 +1,8 @@
 import React from 'react';
 import { useAuth } from '../../lib/auth-context';
-import { useRouter } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-
-const Tab = createBottomTabNavigator();
 
 export default function AppLayout() {
   const { user, isLoading } = useAuth();
@@ -26,8 +22,12 @@ export default function AppLayout() {
     );
   }
 
+  if (!user) {
+    return null;
+  }
+
   return (
-    <Tab.Navigator
+    <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#000',
         tabBarInactiveTintColor: '#999',
@@ -39,34 +39,34 @@ export default function AppLayout() {
         },
       }}
     >
-      <Tab.Screen
+      <Tabs.Screen
         name="(home)"
         options={{
           title: 'Chat',
           tabBarLabel: 'Chat',
         }}
       />
-      <Tab.Screen
+      <Tabs.Screen
         name="proposals"
         options={{
           title: 'Proposals',
           tabBarLabel: 'Proposals',
         }}
       />
-      <Tab.Screen
+      <Tabs.Screen
         name="posts"
         options={{
           title: 'Posts',
           tabBarLabel: 'Posts',
         }}
       />
-      <Tab.Screen
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
           tabBarLabel: 'Settings',
         }}
       />
-    </Tab.Navigator>
+    </Tabs>
   );
 }

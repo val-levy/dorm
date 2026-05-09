@@ -8,18 +8,49 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../lib/auth-context';
 import { supabase } from '../../lib/supabase';
 
+type AuthRedirectError = {
+  code: string | null;
+  description: string;
+};
+
+const getAuthRedirectError = (): AuthRedirectError | null => {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const queryParams = new URLSearchParams(window.location.search);
+  const error = params.get('error') ?? queryParams.get('error');
+
+  if (!error) {
+    return null;
+  }
+
+  return {
+    code: params.get('error_code') ?? queryParams.get('error_code'),
+    description:
+      params.get('error_description') ??
+      queryParams.get('error_description') ??
+      'The sign-in link is invalid or has expired.',
+  };
+};
+
 export default function CompleteProfileScreen() {
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [chapter, setChapter] = useState<string | null>(null);
+  const [chapterId, setChapterId] = useState<number | null>(null);
+  const [authRedirectError] = useState<AuthRedirectError | null>(() => getAuthRedirectError());
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading, signUp } = useAuth();
 
   useEffect(() => {
     // Auto-detect chapter from email domain
@@ -38,7 +69,9 @@ export default function CompleteProfileScreen() {
         .single();
 
       if (data) {
-        setChapter(data.chapters.name);
+        const chapterData = Array.isArray(data.chapters) ? data.chapters[0] : data.chapters;
+        setChapter(chapterData?.name ?? null);
+        setChapterId(data.chapter_id);
       }
     } catch (err) {
       console.log('Chapter detection:', err);
@@ -55,14 +88,17 @@ export default function CompleteProfileScreen() {
     try {
       if (!user) throw new Error('No authenticated user');
 
-      // Update user profile
       const { error: updateError } = await supabase
         .from('users')
-        .update({
+        .upsert({
+          auth_id: user.id,
+          email: user.email,
           name: name.trim(),
           bio: bio.trim() || null,
-        })
-        .eq('id', user.id);
+          chapter_id: chapterId,
+        }, {
+          onConflict: 'email',
+        });
 
       if (updateError) throw updateError;
 
@@ -75,6 +111,86 @@ export default function CompleteProfileScreen() {
       setLoading(false);
     }
   };
+
+  const handleResendLink = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await signUp(email.trim());
+      router.replace('/verify-email');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to send magic link';
+      Alert.alert('Error', message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (authRedirectError) {
+    const isExpiredOtp = authRedirectError.code === 'otp_expired';
+
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{isExpiredOtp ? 'Link Expired' : 'Sign-in Link Failed'}</Text>
+          <Text style={styles.subtitle}>
+            {isExpiredOtp
+              ? 'That magic link is no longer valid. Request a fresh link to continue.'
+              : authRedirectError.description}
+          </Text>
+        </View>
+
+        <View style={styles.form}>
+          <View style={styles.field}>
+            <Text style={styles.label}>Email Address</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="student@harvard.edu"
+              placeholderTextColor="#999"
+              value={email}
+              onChangeText={setEmail}
+              editable={!loading}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleResendLink}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Send New Magic Link</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.secondaryButton]}
+            onPress={() => router.replace('/login')}
+            disabled={loading}
+          >
+            <Text style={styles.secondaryButtonText}>Back to Login</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator color="#000" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -166,6 +282,12 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   form: {},
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+  },
   field: {
     marginBottom: 24,
   },
@@ -214,8 +336,18 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.5,
   },
+  secondaryButton: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+  },
   buttonText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButtonText: {
+    color: '#000',
     fontSize: 16,
     fontWeight: '600',
   },

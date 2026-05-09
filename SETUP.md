@@ -12,7 +12,7 @@
 ## 1. Clone & Install
 
 ```bash
-git clone https://github.com/dormdao/dorm.git
+git clone https://github.com/val-levy/dorm.git
 cd dorm
 npm install
 ```
@@ -60,6 +60,10 @@ EXPO_PUBLIC_DEEP_LINK_SCHEME=dorm
 ## 4. Initialize Supabase Database
 
 Run migrations to set up the schema:
+
+```bash
+supabase link
+```
 
 ```bash
 supabase db push

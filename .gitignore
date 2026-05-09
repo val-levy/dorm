@@ -78,7 +78,13 @@ build/
 Thumbs.db
 
 # Claude Code - personal/local
+.claude*
 .claude/settings.local.json
 .claude/.cache/
 .claude/logs/
 CLAUDE.md.local
+CLAUDE.md
+AGENTS.md
+.claudeignore
+SESSION_STATE.md
+SETUP.md

@@ -6,22 +6,34 @@ import { Platform } from 'react-native';
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Custom storage adapter for mobile (secure) + web (async storage)
+const isBrowser = () => typeof window !== 'undefined';
+
+// Custom storage adapter for mobile (secure) + web. Expo Router can evaluate this
+// module during web server rendering, where browser storage is unavailable.
 const storage = {
   getItem: async (key: string) => {
     if (Platform.OS === 'web') {
+      if (!isBrowser()) {
+        return null;
+      }
       return AsyncStorage.getItem(key);
     }
     return SecureStore.getItemAsync(key);
   },
   setItem: async (key: string, value: string) => {
     if (Platform.OS === 'web') {
+      if (!isBrowser()) {
+        return;
+      }
       return AsyncStorage.setItem(key, value);
     }
     return SecureStore.setItemAsync(key, value);
   },
   removeItem: async (key: string) => {
     if (Platform.OS === 'web') {
+      if (!isBrowser()) {
+        return;
+      }
       return AsyncStorage.removeItem(key);
     }
     return SecureStore.deleteItemAsync(key);
