@@ -30,7 +30,7 @@
       },
       "distribution": "store",
       "env": {
-        "EXPO_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://hgjnjkfjbhlgoychmwbl.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-production-anon-key",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "928197484183-htnmd22eq0ojc1s64srg7cue1dn5k21t.apps.googleusercontent.com"
       }
