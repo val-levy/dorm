@@ -14,7 +14,7 @@ export default function VerifyEmailScreen() {
 
         <Text style={styles.title}>Check Your Email</Text>
         <Text style={styles.description}>
-          We've sent a magic link to your email address. Click the link to verify your account and complete your profile.
+          We&apos;ve sent a magic link to your email address. Click the link to verify your account and complete your profile.
         </Text>
 
         <View style={styles.steps}>

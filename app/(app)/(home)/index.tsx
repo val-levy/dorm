@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,46 +6,61 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../../../lib/auth-context';
 import { supabase } from '../../../lib/supabase';
+import type { Channel } from '../../../lib/types';
 
-interface Channel {
-  id: number;
-  name: string;
-  description?: string;
-  is_public: boolean;
-}
-
-export default function ChatScreen() {
+export default function ChannelListScreen() {
   const { user } = useAuth();
-  const [chapters, setChapters] = useState<any[]>([]);
+  const router = useRouter();
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [chapterName, setChapterName] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadChapters();
+  const load = useCallback(async () => {
+    if (!user) return;
+
+    const { data: dbUser } = await supabase
+      .from('users')
+      .select('chapter_id, chapters(name)')
+      .eq('auth_id', user.id)
+      .single();
+
+    if (!dbUser?.chapter_id) {
+      setLoading(false);
+      return;
+    }
+
+    const chapterData = dbUser.chapters as unknown as { name: string } | null;
+    if (chapterData) setChapterName(chapterData.name);
+
+    const { data } = await supabase
+      .from('channels')
+      .select('*')
+      .eq('chapter_id', dbUser.chapter_id)
+      .is('deleted_at', null)
+      .order('name');
+
+    setChannels(data ?? []);
+    setLoading(false);
   }, [user]);
 
-  const loadChapters = async () => {
-    try {
-      setLoading(true);
-      if (!user) return;
+  useEffect(() => {
+    load();
+  }, [load]);
 
-      // Fetch user's chapter
-      const { data: userData } = await supabase
-        .from('users')
-        .select('chapter_id, chapters(*)')
-        .eq('auth_id', user.id)
-        .single();
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
 
-      if (userData?.chapters) {
-        setChapters([userData.chapters]);
-      }
-    } catch (err) {
-      console.error('Error loading chapters:', err);
-    } finally {
-      setLoading(false);
-    }
+  const openChannel = (channel: Channel) => {
+    router.push(`/(app)/(home)/${channel.id}?name=${encodeURIComponent(channel.name)}`);
   };
 
   if (loading) {
@@ -58,34 +73,42 @@ export default function ChatScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chapters</Text>
-      </View>
+      {chapterName ? (
+        <View style={styles.header}>
+          <Text style={styles.chapterName}>{chapterName}</Text>
+          <Text style={styles.headerSub}>Channels</Text>
+        </View>
+      ) : null}
 
-      {chapters.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>No chapters found</Text>
+      {channels.length === 0 ? (
+        <View style={styles.centered}>
+          <Text style={styles.emptyText}>No channels yet</Text>
         </View>
       ) : (
         <FlatList
-          data={chapters}
-          keyExtractor={(item) => item.id.toString()}
+          data={channels}
+          keyExtractor={(item) => String(item.id)}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.chapterCard}>
-              <Text style={styles.chapterName}>{item.name}</Text>
-              {item.description && (
-                <Text style={styles.chapterDescription}>{item.description}</Text>
+            <TouchableOpacity style={styles.row} onPress={() => openChannel(item)}>
+              <View style={styles.rowLeft}>
+                <Text style={styles.channelIcon}>#</Text>
+                <View>
+                  <Text style={styles.channelName}>{item.name}</Text>
+                  {item.description ? (
+                    <Text style={styles.channelDesc} numberOfLines={1}>
+                      {item.description}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+              {item.is_announcement_only && (
+                <Text style={styles.badge}>Announce</Text>
               )}
-              <Text style={styles.chapterLocation}>{item.location || item.school_name}</Text>
             </TouchableOpacity>
           )}
-          contentContainerStyle={styles.list}
         />
       )}
-
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Chat functionality coming in Phase 1</Text>
-      </View>
     </View>
   );
 }
@@ -93,7 +116,7 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
   },
   centered: {
     flex: 1,
@@ -102,60 +125,62 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  list: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  chapterCard: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#000',
-  },
   chapterName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#000',
-    marginBottom: 4,
   },
-  chapterDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  chapterLocation: {
-    fontSize: 12,
+  headerSub: {
+    fontSize: 13,
     color: '#999',
+    marginTop: 2,
   },
-  empty: {
-    flex: 1,
-    justifyContent: 'center',
+  row: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#eee',
+  },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  channelIcon: {
+    fontSize: 18,
+    color: '#999',
+    marginRight: 10,
+    width: 20,
+    textAlign: 'center',
+  },
+  channelName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+  },
+  channelDesc: {
+    fontSize: 13,
+    color: '#999',
+    marginTop: 2,
+  },
+  badge: {
+    fontSize: 11,
+    color: '#666',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
   emptyText: {
     fontSize: 16,
     color: '#999',
-  },
-  footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#999',
-    textAlign: 'center',
   },
 });

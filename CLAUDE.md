@@ -12,7 +12,7 @@ DormDAO is a multi-university (20–25 schools) crypto fund management platform.
 
 Read these in this order at the start of every session. **Do not start work until you have read all four.**
 
-1. `SESSION_STATE.md` — rolling log of what's done, what's pending, the literal next concrete action. **This is your starting point.**
+1. `CHANGE_LOG.md` — rolling log of what's done, what's pending, the literal next concrete action. **This is your starting point.**
 2. `docs/00-prd.md` — product requirements.
 3. `docs/06-build-plan.md` — phased build plan. You only ever work on the current phase unless told otherwise.
 4. The doc(s) relevant to the current phase:
@@ -42,8 +42,8 @@ If `docs/` does not exist yet, the first task is to generate it by following `do
 
 ### Phase discipline
 
-- You only work on the current phase as marked in `SESSION_STATE.md`. Do not "while I'm here" your way into the next phase.
-- A phase isn't done until its "definition of done" in `docs/06-build-plan.md` is met. If you can't meet it, mark the gap explicitly in `SESSION_STATE.md` rather than silently moving on.
+- You only work on the current phase as marked in `CHANGE_LOG.md`. Do not "while I'm here" your way into the next phase.
+- A phase isn't done until its "definition of done" in `docs/06-build-plan.md` is met. If you can't meet it, mark the gap explicitly in `CHANGE_LOG.md` rather than silently moving on.
 
 ### Code style
 
@@ -62,7 +62,7 @@ If `docs/` does not exist yet, the first task is to generate it by following `do
 
 ### At the start of every session
 
-1. Read `SESSION_STATE.md` end-to-end.
+1. Read `CHANGE_LOG.md` end-to-end.
 2. Read `docs/06-build-plan.md` and identify the current phase.
 3. Read the phase-relevant docs listed above.
 4. State back to the human, in 3–5 bullets: where we are, what's next, any blockers from `docs/07-open-questions.md`.
@@ -75,14 +75,14 @@ If `docs/` does not exist yet, the first task is to generate it by following `do
 
 ### At the end of every session — REQUIRED
 
-Before the session ends, you **must** update `SESSION_STATE.md`:
+Before the session ends, you **must** update `CHANGE_LOG.md`:
 
 1. Move completed items to `[x]` in the Status checklist.
 2. Add new items to the checklist if scope expanded.
 3. Update the **Next concrete action** section with the literal next thing the next session should do (specific file paths, specific commands).
 4. Append a Change log entry with date, summary of work, files touched, and any decisions made.
 5. If new open questions surfaced, add them to `docs/07-open-questions.md`.
-6. Show the human the diff of `SESSION_STATE.md` and confirm it's accurate before ending.
+6. Show the human the diff of `CHANGE_LOG.md` and confirm it's accurate before ending.
 
 If a session ends without this update, the next session starts blind. **This step is more important than finishing the last 5% of the code task.** If you're running out of time or context, stop coding earlier and update the state file.
 
@@ -100,7 +100,7 @@ That is sufficient. Don't require more.
 /
 ├── CLAUDE.md                  # this file
 ├── AGENTS.md                  # one-liner pointing here, for cross-tool compatibility
-├── SESSION_STATE.md           # rolling state — read first, update last
+├── CHANGE_LOG.md           # rolling state — read first, update last
 ├── dormdao_build_prompt.md    # the original build prompt, kept for reference
 ├── docs/
 │   ├── 00-prd.md
@@ -138,7 +138,7 @@ Phase and session summaries live in `docs/phases/` and follow the template at `d
 - Skipping RLS because "it's a prototype." (RLS is the prototype.)
 - Storing a key "just for testing." (No. Never. Use the MPC sandbox.)
 - Marking a phase done without meeting its DoD.
-- Ending a session without updating `SESSION_STATE.md`.
+- Ending a session without updating `CHANGE_LOG.md`.
 - Silently swapping libraries or providers.
 - Inventing schema in code without updating `docs/02-data-model.md` first.
 

@@ -5,11 +5,13 @@ export default function HomeLayout() {
     <Stack
       screenOptions={{
         headerShown: true,
-        headerTitle: 'Chat',
         headerBackTitle: 'Back',
+        headerStyle: { backgroundColor: '#fff' },
+        headerTitleStyle: { fontWeight: '600' },
       }}
     >
       <Stack.Screen name="index" options={{ headerTitle: 'Chat' }} />
+      <Stack.Screen name="[channelId]" options={{ headerTitle: 'Channel' }} />
     </Stack>
   );
 }

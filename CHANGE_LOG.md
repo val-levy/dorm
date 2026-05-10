@@ -1,4 +1,4 @@
-# SESSION_STATE.md — DormDAO
+# CHANGE_LOG.md — DormDAO
 
 > Rolling state file. The agent reads this **first** at the start of every session and updates it **last** before ending. Keep it accurate. If this file lies, every future session starts in the wrong place.
 
@@ -8,7 +8,7 @@ DormDAO: multi-university (20–25 schools) crypto fund management platform. Cro
 
 ## Current phase
 
-**Phase 0 — Foundation** — Repo scaffolded, local Supabase running, auth flow working. `npm run type-check` passes. `/docs` tree not yet generated (deferred; app code exists; reconcile schema with docs before Phase 1).
+**Phase 1 — Chat MVP** — Phase 0 complete. Moving to chat: workspaces, channels, messages, threads, reactions.
 
 ## Decisions locked in
 
@@ -47,7 +47,7 @@ Most questions answered in `docs/07-open-questions.md`. Remaining blockers:
 ### Pre-Phase 0 — Setup
 - [x] Build prompt drafted (`dormdao_build_prompt.md`)
 - [x] Repo constitution written (`CLAUDE.md`, `AGENTS.md`)
-- [x] Session state initialized (`SESSION_STATE.md`)
+- [x] Session state initialized (`CHANGE_LOG.md`)
 - [x] Repo created and pushed to GitHub
 - [x] Open questions reviewed and answered by Val (see `docs/07-open-questions.md`)
 - [ ] `/docs` tree generated (deferred; app code exists; reconcile before Phase 1)
@@ -61,15 +61,22 @@ Most questions answered in `docs/07-open-questions.md`. Remaining blockers:
 - [x] Expired magic-link recovery screen implemented
 - [x] Google OAuth wired
 - [ ] `.edu` allowlist enforced at signup (deferred — single chapter only; `uoregon.edu` hardcoded for now)
-- [ ] Role schema (`user_roles` table) + RLS policies for roles
-- [ ] CI: lint, typecheck, test, EAS Build dry-run, Vercel preview
+- [x] Role schema (`user_roles` table) + RLS policies for roles + auth signup trigger applied
+- [x] CI: lint, typecheck, test passing; EAS Build manual-dispatch only; Vercel deploy wired (needs secrets)
 - [ ] Sentry + PostHog wired on mobile and web
-- [ ] Phase 0 demo checklist met
+- [x] README + .env.example written
+- [x] Phase 0 demo checklist met
 
 ### Phase 1 — Chat MVP
-- [ ] Workspaces (chapter + org-wide), channels (public/private), DMs, group DMs
-- [ ] Threads, reactions, @mentions, file attachments, presence, typing
+- [x] Channels + channel list screen (public channels per chapter)
+- [x] Messages + realtime subscription (INSERT events via supabase_realtime)
+- [x] Auto-join on channel open (users_in_channels upsert)
+- [x] Message composer with send (author_id resolved from auth_id)
+- [ ] Reactions (emoji), threads, @mentions
+- [ ] DMs + group DMs
+- [ ] Presence + typing indicators
 - [ ] Postgres FTS message search
+- [ ] Unread badge (last_read_message_id tracking)
 - [ ] Realtime subscriptions tested under load
 
 ### Phase 2 — Pitches / Blog
@@ -112,15 +119,16 @@ Most questions answered in `docs/07-open-questions.md`. Remaining blockers:
 
 **Local dev environment:**
 - Expo web: `npm run web -- --port 19006 --localhost` (Node 20 via nvm)
-- Local Supabase: `supabase start` using global CLI `2.22.12` (NOT `npx supabase start` — newer npx tried to upgrade Postgres 15 → 17 and failed)
+- Local Supabase: `supabase start` using global CLI `2.22.12` (NOT `npx supabase start`)
 - Magic-link emails: Mailpit at `http://127.0.0.1:54326/`
 
-**Next tasks (Phase 0 remaining):**
-1. Seed `chapter_domains` table with the 16 chapter + `.edu` domain mappings from `docs/07-open-questions.md` Q10 (e.g., `uoregon.edu`, `cornell.edu`, etc.) in a new migration.
-2. Wire Google OAuth (add provider in Supabase local config + Auth context).
-3. Create a `user_roles` table migration with RLS policies; update `on_auth_signup` Edge Function to assign default `MEMBER` role via role table (currently inserts into `user_roles` but table may not exist).
-4. Set up CI: GitHub Actions workflow for lint + typecheck + test.
-5. Decide whether to generate `/docs` tree from `dormdao_build_prompt.md` before Phase 1, or reconcile existing code against the planned schema.
+**Next tasks (Phase 1 remaining):**
+1. **Test the chat flow end-to-end**: sign in, verify channel list shows "general" + "announcements", open a channel, send a message, confirm realtime works in a second browser tab.
+2. **Reactions**: tap-hold or tap a message to add an emoji reaction. Query `message_reactions` and display grouped counts below each message. Wire realtime for reactions.
+3. **Unread badge**: when user reads a channel, update `users_in_channels.last_read_message_id`; compute unread count on channel list screen.
+4. **Presence / typing**: upsert `presence` row on channel open; broadcast `is_typing` on keystroke; subscribe and show "X is typing…" indicator.
+5. **FTS search screen**: add a search input that queries `messages` using `content_search @@ plainto_tsquery(...)`.
+6. **Thread view**: tap a message → `[channelId]/thread/[messageId].tsx` shows replies; create threads row + reply messages with `thread_id` set.
 
 ## Change log
 
@@ -137,9 +145,45 @@ Append a new entry at the top of this list every session. Format:
 
 ---
 
+### 2026-05-09 — Phase 1 Chat MVP: schema + channel list + message screen
+**Worked on:** Created `0006_chat_schema.sql` — sequences, `channels`, `users_in_channels`, `messages`, `threads` (with circular-FK solution), `message_reactions`, `presence`; RLS policies using `auth_id = auth.uid()` pattern; realtime publications for messages, reactions, presence; seeded "general" + "announcements" channels for Oregon Blockchain. Applied migration to local DB. Wrote channel list screen (`(home)/index.tsx`), channel message screen (`(home)/[channelId].tsx`) with realtime INSERT subscription and auto-join, and updated `(home)/_layout.tsx` to register the dynamic route. Shared TypeScript types in `lib/types.ts`. `npm run type-check` passes clean.
+**Files touched:** `supabase/migrations/0006_chat_schema.sql` (new), `lib/types.ts` (new), `app/(app)/(home)/index.tsx`, `app/(app)/(home)/[channelId].tsx` (new), `app/(app)/(home)/_layout.tsx`, `CHANGE_LOG.md`.
+**Decisions made:** `created_by` on channels is nullable so system-seeded channels work without a user; auto-join upserts into `users_in_channels` on channel open (simplest UX); header title set dynamically via `useNavigation().setOptions`.
+**Open questions surfaced:** None.
+**Phase status delta:** Phase 1 core chat scaffolding done. Remaining: reactions, unread badge, presence/typing, FTS search, threads.
+
+---
+
+### 2026-05-09 — CI workflows fixed
+**Worked on:** Fixed 2 lint errors (`Channel` unused interface, unescaped apostrophe). Changed EAS build trigger from push-to-main to `workflow_dispatch` only (avoids burning build credits on every commit). `npm run lint` and `npm test --passWithNoTests --ci` both pass clean.
+**Files touched:** `app/(app)/(home)/index.tsx`, `app/(auth)/verify-email.tsx`, `.github/workflows/eas-build.yml`, `CHANGE_LOG.md`.
+**Decisions made:** EAS Build runs on-demand only for Phase 0. Vercel deploy workflow is wired but requires `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` secrets in GitHub to activate.
+**Open questions surfaced:** None.
+**Phase status delta:** CI checklist item checked off.
+
+---
+
+### 2026-05-09 — Apply migration 0005 (auth signup trigger)
+**Worked on:** Applied `0005_auth_signup_trigger.sql` to local DB manually (it was tracked as a local file but not yet executed against the running Postgres container). Verified `on_auth_user_created` trigger and `user_roles` table are live.
+**Files touched:** `CHANGE_LOG.md` (state update only; migration file already existed).
+**Decisions made:** Ran migration via `docker exec` against `supabase_db_dorm` and recorded version in `supabase_migrations.schema_migrations`.
+**Open questions surfaced:** None.
+**Phase status delta:** `user_roles` + auth trigger checked off.
+
+---
+
+### 2026-05-09 — Phase 0 complete
+**Worked on:** README rewritten to reflect actual current state. `.env.example` written with all 3 required vars. Phase 0 marked done.
+**Files touched:** `README.md`, `.env.example`, `CHANGE_LOG.md`.
+**Decisions made:** Phase 0 DoD met at alpha scope (single chapter, local dev, CI passing). Skipping Sentry/PostHog until Phase 1 is underway.
+**Open questions surfaced:** None.
+**Phase status delta:** Phase 0 → complete. Now on Phase 1 — Chat MVP.
+
+---
+
 ### 2026-05-09 — Google OAuth done; chapter domain scope narrowed
 **Worked on:** State update only.
-**Files touched:** `SESSION_STATE.md`.
+**Files touched:** `CHANGE_LOG.md`.
 **Decisions made:** Google OAuth is live. Multi-chapter domain seeding deferred indefinitely — single-chapter launch with `uoregon.edu` only; no migration needed for now.
 **Open questions surfaced:** None.
 **Phase status delta:** Google OAuth checked off. `.edu` allowlist item re-scoped to deferred.
@@ -148,7 +192,7 @@ Append a new entry at the top of this list every session. Format:
 
 ### 2026-05-09 — Remove Deno Edge Functions
 **Worked on:** Deleted `supabase/functions/on_auth_signup/` (Deno Edge Function) in favour of the pure-SQL trigger already written in `supabase/migrations/0005_auth_signup_trigger.sql`. Removed the `supabase/functions` exclusion from `tsconfig.json` (no Deno files remain).
-**Files touched:** `supabase/functions/on_auth_signup/index.ts` (deleted), `tsconfig.json`, `SESSION_STATE.md`.
+**Files touched:** `supabase/functions/on_auth_signup/index.ts` (deleted), `tsconfig.json`, `CHANGE_LOG.md`.
 **Decisions made:** Auth-signup provisioning (user row + MEMBER role) runs entirely in the database via a `SECURITY DEFINER` trigger on `auth.users`. No Deno runtime dependency anywhere in the project.
 **Open questions surfaced:** None.
 **Phase status delta:** `supabase/functions/` directory removed. `tsconfig.json` exclusion cleaned up.
@@ -156,8 +200,8 @@ Append a new entry at the top of this list every session. Format:
 ---
 
 ### 2026-05-08 — Type-check fix + state reconciliation
-**Worked on:** Fixed `npm run type-check` failures caused by root tsconfig picking up Deno Edge Function files; reconciled SESSION_STATE.md to accurately reflect Phase 0 progress (not Pre-Phase 0).
-**Files touched:** `tsconfig.json`, `SESSION_STATE.md`.
+**Worked on:** Fixed `npm run type-check` failures caused by root tsconfig picking up Deno Edge Function files; reconciled CHANGE_LOG.md to accurately reflect Phase 0 progress (not Pre-Phase 0).
+**Files touched:** `tsconfig.json`, `CHANGE_LOG.md`.
 **Decisions made:** Excluded `supabase/functions` from root tsconfig — Edge Functions are Deno code and should not be checked by the Node/Expo TypeScript compiler. `npm run type-check` now passes cleanly.
 **Open questions surfaced:** None.
 **Phase status delta:** `npm run type-check` green. Phase 0 status updated; checklist shows 6 done, 6 remaining.
@@ -166,63 +210,63 @@ Append a new entry at the top of this list every session. Format:
 
 ### 2026-05-07 — Expired magic-link recovery
 **Worked on:** Made the Complete Profile screen handle Supabase magic-link redirect errors, including `otp_expired`, instead of showing the normal profile form without a session.
-**Files touched:** `app/(auth)/complete-profile.tsx`, `SESSION_STATE.md`.
+**Files touched:** `app/(auth)/complete-profile.tsx`, `CHANGE_LOG.md`.
 **Decisions made:** Parse auth error details from the web URL hash/query on the profile screen and provide an inline resend-magic-link flow using the existing `signUp` helper.
 **Open questions surfaced:** None.
 **Phase status delta:** `npm run type-check` still fails only on the existing Deno Edge Function import/global type errors in `supabase/functions/on_auth_signup/index.ts`.
 
 ### 2026-05-07 — Complete profile save fix
 **Worked on:** Fixed the Complete Profile button failing to save/navigate after magic-link login.
-**Files touched:** `app/(auth)/complete-profile.tsx`, `supabase/migrations/0003_profile_completion_rls.sql`, `SESSION_STATE.md`.
+**Files touched:** `app/(auth)/complete-profile.tsx`, `supabase/migrations/0003_profile_completion_rls.sql`, `CHANGE_LOG.md`.
 **Decisions made:** Saved profile rows by authenticated email instead of Auth UUID because the current `public.users.id` schema is bigint; added RLS policies allowing authenticated users to insert/update their own profile row by verified email; applied the migration to the running local DB with `docker exec`.
 **Open questions surfaced:** The public users table still does not model Supabase Auth UUIDs cleanly; this should be reconciled during Phase 0 schema alignment.
 **Phase status delta:** Expo web rebuilds cleanly. `npm run type-check` no longer reports the profile query error; remaining failures are only Deno Edge Function type declarations/imports.
 
 ### 2026-05-07 — Local magic-link delivery fix
 **Worked on:** Fixed local magic-link delivery confusion after the app sent auth email to hosted Supabase instead of local Supabase/Mailpit.
-**Files touched:** `.env.local`, `lib/auth-context.tsx`, `supabase/config.toml`, `SESSION_STATE.md`.
+**Files touched:** `.env.local`, `lib/auth-context.tsx`, `supabase/config.toml`, `CHANGE_LOG.md`.
 **Decisions made:** Pointed Expo at local Supabase (`http://127.0.0.1:54321`) with the local anon key; set local Auth site URL to `http://localhost:19006`; added a web redirect to `http://localhost:19006/complete-profile`; disabled local Storage because the linked project's storage image tag/migration (`optimize-existing-functions-again`) prevents local startup; restarted Expo and Supabase with the expected global Supabase CLI `2.22.12`.
 **Open questions surfaced:** None.
 **Phase status delta:** Local Supabase Auth and Mailpit are running. A magic-link email for `vallevy@uoregon.edu` was confirmed in Mailpit at `http://127.0.0.1:54326/`; a direct test OTP request also delivered to `test@berkeley.edu`. `npm run type-check` still fails on the existing profile query and Deno Edge Function typing gaps.
 
 ### 2026-05-07 — Expo Router tab layout fix
 **Worked on:** Fixed the browser error `Couldn't find a 'component', 'getComponent' or 'children' prop for the screen '(home)'`.
-**Files touched:** `app/(app)/_layout.tsx`, `SESSION_STATE.md`.
+**Files touched:** `app/(app)/_layout.tsx`, `CHANGE_LOG.md`.
 **Decisions made:** Replaced direct `createBottomTabNavigator()` usage with Expo Router's `Tabs` component so file-based routes supply the screen components.
 **Open questions surfaced:** None.
 **Phase status delta:** Expo web rebuilds cleanly after the change. `npm run type-check` no longer reports tab layout errors; remaining failures are the profile query shape and Deno Edge Function types.
 
 ### 2026-05-07 — Expo web localhost fix
 **Worked on:** Diagnosed Chrome `ERR_CONNECTION_REFUSED` for the local Expo web app and got Expo web serving on `http://localhost:19006/`.
-**Files touched:** `app.json`, `lib/supabase.ts`, `package.json`, `package-lock.json`, `SESSION_STATE.md`.
+**Files touched:** `app.json`, `lib/supabase.ts`, `package.json`, `package-lock.json`, `CHANGE_LOG.md`.
 **Decisions made:** Pinned Expo SDK 50 dependencies to versions accepted by `npx expo install --check`; removed missing `assets/*` references from `app.json`; made the Supabase storage adapter safe during Expo Router web server rendering where `window` is unavailable.
 **Open questions surfaced:** None.
 **Phase status delta:** Expo web dev server now starts and returns `HTTP/1.1 200 OK` at `http://localhost:19006/`. `npm run type-check` still fails on unrelated Phase 0 type gaps listed in Next concrete action.
 
 ### 2026-05-07 — Supabase migration startup fix
 **Worked on:** Fixed local Supabase startup failure caused by `0001_initial_schema.sql` referencing ID sequences before creating them.
-**Files touched:** `supabase/migrations/0001_initial_schema.sql`, `SESSION_STATE.md`.
+**Files touched:** `supabase/migrations/0001_initial_schema.sql`, `CHANGE_LOG.md`.
 **Decisions made:** Created the bigint ID sequences before table creation and bound them to their table columns with `ALTER SEQUENCE ... OWNED BY`.
-**Open questions surfaced:** Repo state appears ahead of `SESSION_STATE.md` because Supabase migrations exist while the state file still says `/docs` has not been generated; next session should reconcile that.
+**Open questions surfaced:** Repo state appears ahead of `CHANGE_LOG.md` because Supabase migrations exist while the state file still says `/docs` has not been generated; next session should reconcile that.
 **Phase status delta:** `supabase start` now succeeds. `supabase status` reports the local development setup running; `supabase_imgproxy_dorm` and `supabase_pooler_dorm` are stopped.
 
 ### 2026-05-07 — Docker Desktop snapshot corruption diagnosis
 **Worked on:** Diagnosed `supabase start` failure during local Postgres image extraction.
-**Files touched:** `SESSION_STATE.md`.
+**Files touched:** `CHANGE_LOG.md`.
 **Decisions made:** Treated the failure as Docker Desktop/containerd local store corruption, not a Supabase project config issue. `docker buildx prune -f` reclaimed 12.7 GB but did not fix the missing overlay snapshot.
 **Open questions surfaced:** None.
 **Phase status delta:** Local Supabase remains blocked until Docker Desktop storage is repaired or reset.
 
 ### 2026-05-06 — Supabase local config compatibility
 **Worked on:** Fixed local Supabase CLI config keys that prevented `supabase start` from parsing `supabase/config.toml`.
-**Files touched:** `supabase/config.toml`, `SESSION_STATE.md`.
+**Files touched:** `supabase/config.toml`, `CHANGE_LOG.md`.
 **Decisions made:** Kept the existing local port assignments; changed only schema-incompatible key names for Supabase CLI `2.22.12`.
 **Open questions surfaced:** None.
 **Phase status delta:** Local Supabase startup now proceeds past config parsing; Docker Desktop/daemon availability is the next blocker.
 
 ### 2026-05-06 — Project scaffolding (this session)
 **Worked on:** Drafted build prompt, repo constitution, and session-state protocol.
-**Files touched:** `dormdao_build_prompt.md`, `CLAUDE.md`, `AGENTS.md`, `SESSION_STATE.md`.
+**Files touched:** `dormdao_build_prompt.md`, `CLAUDE.md`, `AGENTS.md`, `CHANGE_LOG.md`.
 **Decisions made:** Stack locked (Expo + Supabase + NativeWind + TanStack Query); custody model locked (3-tier MPC/Safe/Ledger); first deliverable is `/docs` tree, not code.
 **Open questions surfaced:** Chapter list, legal entity, target chains, fund size, jurisdictional posture, MPC vendor, KYC vendor, tx-screening vendor.
 **Phase status delta:** Pre-Phase 0 setup ~50% done. Next is repo creation and feeding the build prompt to Claude Code.
