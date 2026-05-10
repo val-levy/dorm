@@ -57,10 +57,10 @@ Most questions answered in `docs/07-open-questions.md`. Remaining blockers:
 - [x] Local Supabase provisioned, env wired (`.env.local` → `http://127.0.0.1:54321`)
 - [x] Auth: magic-link working (local Mailpit), `.edu` allowlist in progress
 - [x] User profiles + chapter assignment (via email domain, RLS policies)
-- [x] `npm run type-check` passing (Deno Edge Functions excluded from root tsconfig)
+- [x] `npm run type-check` passing (Deno Edge Functions removed; SQL trigger replaces them)
 - [x] Expired magic-link recovery screen implemented
-- [ ] Google OAuth wired
-- [ ] `.edu` allowlist enforced at signup (chapter_domains table seeded with all 16 chapters)
+- [x] Google OAuth wired
+- [ ] `.edu` allowlist enforced at signup (deferred — single chapter only; `uoregon.edu` hardcoded for now)
 - [ ] Role schema (`user_roles` table) + RLS policies for roles
 - [ ] CI: lint, typecheck, test, EAS Build dry-run, Vercel preview
 - [ ] Sentry + PostHog wired on mobile and web
@@ -134,6 +134,24 @@ Append a new entry at the top of this list every session. Format:
 **Open questions surfaced:** ...
 **Phase status delta:** ...
 ```
+
+---
+
+### 2026-05-09 — Google OAuth done; chapter domain scope narrowed
+**Worked on:** State update only.
+**Files touched:** `SESSION_STATE.md`.
+**Decisions made:** Google OAuth is live. Multi-chapter domain seeding deferred indefinitely — single-chapter launch with `uoregon.edu` only; no migration needed for now.
+**Open questions surfaced:** None.
+**Phase status delta:** Google OAuth checked off. `.edu` allowlist item re-scoped to deferred.
+
+---
+
+### 2026-05-09 — Remove Deno Edge Functions
+**Worked on:** Deleted `supabase/functions/on_auth_signup/` (Deno Edge Function) in favour of the pure-SQL trigger already written in `supabase/migrations/0005_auth_signup_trigger.sql`. Removed the `supabase/functions` exclusion from `tsconfig.json` (no Deno files remain).
+**Files touched:** `supabase/functions/on_auth_signup/index.ts` (deleted), `tsconfig.json`, `SESSION_STATE.md`.
+**Decisions made:** Auth-signup provisioning (user row + MEMBER role) runs entirely in the database via a `SECURITY DEFINER` trigger on `auth.users`. No Deno runtime dependency anywhere in the project.
+**Open questions surfaced:** None.
+**Phase status delta:** `supabase/functions/` directory removed. `tsconfig.json` exclusion cleaned up.
 
 ---
 

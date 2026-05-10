@@ -39,8 +39,7 @@
   "exclude": [
     "node_modules",
     "dist",
-    "build",
-    "supabase/functions"
+    "build"
   ],
   "extends": "expo/tsconfig.base"
 }
